@@ -2,15 +2,20 @@ package com.example.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.FaceDetector;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.example.myapplication.detector.ObjectDetector;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
@@ -20,7 +25,9 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
+import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -28,8 +35,10 @@ import org.opencv.objdetect.CascadeClassifier;
 
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
+import java.io.InputStream;
 import java.util.Arrays;
 
 
@@ -38,6 +47,7 @@ public class FaceContrast extends AppCompatActivity {
     //初始化人脸探测器
     private CascadeClassifier faceDetector;
     private Bitmap mBitmap1, mBitmap2;
+
 
     static {
         System.loadLibrary("opencv_java3");
@@ -49,10 +59,45 @@ public class FaceContrast extends AppCompatActivity {
             super.onManagerConnected(status);
             switch (status) {
                 case BaseLoaderCallback.SUCCESS:
+                    Log.i("TAG", "OpenCV loaded successfully");
 
+                    // Load native library after(!) OpenCV initialization
+                    System.loadLibrary("detection_based_tracker");
+
+                    try {
+                        // load cascade file from application resources
+                        InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
+                        File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
+                        File mCascadeFile = new File(cascadeDir, "lbpcascade_frontalface.xml");
+                        FileOutputStream os = new FileOutputStream(mCascadeFile);
+
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = is.read(buffer)) != -1) {
+                            os.write(buffer, 0, bytesRead);
+                        }
+                        is.close();
+                        os.close();
+
+                        CascadeClassifier mJavaDetector = new CascadeClassifier(mCascadeFile.getAbsolutePath());
+                        if (mJavaDetector.empty()) {
+                            Log.e("TAG", "Failed to load cascade classifier");
+                            mJavaDetector = null;
+                        } else
+                            Log.i("TAG", "Loaded cascade classifier from " + mCascadeFile.getAbsolutePath());
+
+//                        DetectionBasedTracker mNativeDetector = new DetectionBasedTracker(mCascadeFile.getAbsolutePath(), 0);
+
+                        cascadeDir.delete();
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.e("TAG", "Failed to load cascade. Exception thrown: " + e);
+                    }
                     break;
 
                 default:
+                    super.onManagerConnected(status);
                     break;
             }
         }
@@ -76,8 +121,8 @@ public class FaceContrast extends AppCompatActivity {
         fileIsExists(Environment.getExternalStorageDirectory().getAbsolutePath() + "/facelogin/xietingfeng.jpg");
 //        fileIsExists("file://android_assets/wuyanzu.jpg");
 
-        mBitmap1 = BitmapFactory.decodeResource(getResources(), R.mipmap.xietingfeng);
-        mBitmap2 = BitmapFactory.decodeResource(getResources(), R.mipmap.xietingfeng2);
+        mBitmap1 = BitmapFactory.decodeResource(getResources(), R.mipmap.guli);
+        mBitmap2 = BitmapFactory.decodeResource(getResources(), R.mipmap.tongli);
 
         iv_01.setImageBitmap(mBitmap1);
         iv_02.setImageBitmap(mBitmap2);
@@ -95,11 +140,82 @@ public class FaceContrast extends AppCompatActivity {
                 Utils.bitmapToMat(mBitmap2, mat2);
                 Imgproc.cvtColor(mat1, mat11, Imgproc.COLOR_BGR2GRAY);
                 Imgproc.cvtColor(mat2, mat22, Imgproc.COLOR_BGR2GRAY);
+
                 comPareHist(mat11, mat22);
 //                bt_face_check.setText("检测结果：" + check_info);
+
             }
         });
     }
+
+    /**
+     * 特征对比
+     * 对比的两张图片必须是灰度图
+     *
+     * @param file1 人脸特征
+     * @param file2 人脸特征
+     * @return 相似度
+     */
+//    public double CmpPic(String file1, String file2) {
+//
+//
+//        int l_bins = 20;
+//        int hist_size[] = {l_bins};
+//
+//        float v_ranges[] = {0, 100};
+//        float ranges[][] = {v_ranges};
+//
+//        opencv_core.IplImage Image1 = cvLoadImage(file1, CV_LOAD_IMAGE_GRAYSCALE);
+//        opencv_core.IplImage Image2 = cvLoadImage(file2, CV_LOAD_IMAGE_GRAYSCALE);
+//
+//        IplImage imageArr1[] = {Image1};
+//        IplImage imageArr2[] = {Image2};
+//
+//        opencv_core.CvHistogram Histogram1 = opencv_core.CvHistogram.create(1, hist_size, CV_HIST_ARRAY, ranges, 1);
+//        opencv_core.CvHistogram Histogram2 = opencv_core.CvHistogram.create(1, hist_size, CV_HIST_ARRAY, ranges, 1);
+//
+//        cvCalcHist(imageArr1, Histogram1, 0, null);
+//        cvCalcHist(imageArr2, Histogram2, 0, null);
+//
+//        cvNormalizeHist(Histogram1, 100.0);
+//        cvNormalizeHist(Histogram2, 100.0);
+//
+//        return cvCompareHist(Histogram1, Histogram2, CV_COMP_CORREL);
+//    }
+
+
+    /**
+     * 提取特征
+     *
+     * @param context  Context
+     * @param fileName 文件名
+     * @return 特征图片
+     */
+    public Bitmap getImage(Context context, String fileName) {
+        String filePath = getFilePath(context, fileName);
+        if (TextUtils.isEmpty(filePath)) {
+            return null;
+        } else {
+            return BitmapFactory.decodeFile(filePath);
+        }
+    }
+
+    /**
+     * 获取人脸特征路径
+     *
+     * @param fileName 人脸特征的图片的名字
+     * @return 路径
+     */
+    private String getFilePath(Context context, String fileName) {
+        if (TextUtils.isEmpty(fileName)) {
+            return null;
+        }
+        // 内存路径
+//        return context.getApplicationContext().getFilesDir().getPath() + fileName + ".jpg";
+        // 内存卡路径 需要SD卡读取权限
+        return Environment.getExternalStorageDirectory() + "/FaceDetect/" + fileName + ".jpg";
+    }
+
 
 
     public boolean fileIsExists(String fileName) {
@@ -187,8 +303,10 @@ public class FaceContrast extends AppCompatActivity {
         super.onResume();
         // 通过OpenCV引擎服务加载并初始化OpenCV类库，所谓OpenCV引擎服务即是
         // OpenCV_2.4.9.2_Manager_2.4_*.apk程序包，存在于OpenCV安装包的apk目录中
-//        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
-//                callback);
+//        if (OpenCVLoader.initDebug()){
+//            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this,
+//                    callback);
+//        }
     }
 
 
