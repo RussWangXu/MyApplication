@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/study_vedio_activity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/iv_iviviv"
+        android:layout_width="wrap_content"
+        android:layout_height="10dp"
+        android:layout_centerHorizontal="true"
+        />
+
+    <Button
+        android:id="@+id/bt_change"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:textSize="18sp"
+        android:layout_marginTop="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/icon_switch_camera"
+        android:layout_centerHorizontal="true"/>
+
+    <LinearLayout
+        android:id="@+id/ll_main"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/bt_change"
+        android:layout_marginTop="10dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingRight="6dp">
+
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="人脸识别"
+            android:textColor="#FFF"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:lineSpacingExtra="8dp"
+            android:text="请进行人脸识别,把清晰的面目放在取景框内"
+            android:textColor="#FFF"
+            android:textSize="14sp" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="50dp"
+            >
+
+            <SurfaceView
+                android:id="@+id/view_surface"
+                android:layout_width="200dp"
+                android:layout_height="360dp"
+                android:layout_centerInParent="true" />
+
+
+        </RelativeLayout>
+
+    </LinearLayout>
+
+
+    <TextView
+        android:id="@+id/tv_face_num"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="识别人脸人数"
+        android:textSize="16sp"
+        android:layout_marginTop="10dp"
+        android:layout_below="@id/ll_main"
+        android:layout_centerHorizontal="true"
+        android:textColor="#fff"/>
+
+</RelativeLayout>

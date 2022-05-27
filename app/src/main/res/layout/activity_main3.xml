@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity2">
+    tools:context=".MainActivity3">
 
     <com.example.myapplication.view.FaceBeautyView
         android:id="@+id/fbv_surface_view"
@@ -12,19 +12,19 @@
 
     <ImageView
         android:id="@+id/iv_switch_btn"
-        android:src="@mipmap/ic_launcher"
+        android:src="@drawable/icon_switch_camera"
         android:layout_alignParentRight="true"
-        android:layout_marginRight="15dp"
-        android:layout_marginTop="15dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="20dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <ImageView
         android:id="@+id/iv_take_photo_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="50dp"
-        android:src="@mipmap/ic_launcher_round" />
+        android:layout_marginBottom="15dp"
+        android:src="@drawable/selector_take_photo" />
 </RelativeLayout>

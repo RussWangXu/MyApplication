@@ -5,9 +5,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.media.FaceDetector;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -16,6 +22,11 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.example.myapplication.detector.ObjectDetector;
+import com.example.myapplication.engine.FaceEngine;
+import com.example.myapplication.utils.ConvertUtil;
+import com.seeta.sdk.SeetaImageData;
+import com.seeta.sdk.SeetaPointF;
+import com.seeta.sdk.SeetaRect;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
@@ -27,7 +38,6 @@ import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
-import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -47,11 +57,23 @@ public class FaceContrast extends AppCompatActivity {
     //初始化人脸探测器
     private CascadeClassifier faceDetector;
     private Bitmap mBitmap1, mBitmap2;
+    private int registerIndex;
+    private boolean moduleFlag = false;
 
+    private ImageView iv_01;
+    private ImageView iv_02;
 
     static {
         System.loadLibrary("opencv_java3");
     }
+
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            iv_02.setImageBitmap((Bitmap) msg.obj);
+        }
+    };
 
     private BaseLoaderCallback callback = new BaseLoaderCallback(this) {
         @Override
@@ -103,26 +125,53 @@ public class FaceContrast extends AppCompatActivity {
         }
     };
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_face_contrast);
         try {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(3000);
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+
             initView();
+            initFace();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    private static long lastClickTime; //控制按钮快速点击造成activity多次启动 时间戳
+
+    public static boolean isFastDoubleClick() {
+        long time = System.currentTimeMillis();
+        long timeD = time - lastClickTime;
+        if (timeD >= 0 && timeD <= 2000) {
+            return true;
+        } else {
+            lastClickTime = time;
+            return false;
+        }
+    }
+
     private void initView() throws IOException {
         Button bt_face_check = findViewById(R.id.bt_face_check);
-        ImageView iv_01 = findViewById(R.id.iv_01);
-        ImageView iv_02 = findViewById(R.id.iv_02);
+        iv_01 = findViewById(R.id.iv_01);
+        iv_02 = findViewById(R.id.iv_02);
         fileIsExists(Environment.getExternalStorageDirectory().getAbsolutePath() + "/facelogin/xietingfeng.jpg");
 //        fileIsExists("file://android_assets/wuyanzu.jpg");
 
-        mBitmap1 = BitmapFactory.decodeResource(getResources(), R.mipmap.guli);
-        mBitmap2 = BitmapFactory.decodeResource(getResources(), R.mipmap.tongli);
+        mBitmap1 = BitmapFactory.decodeResource(getResources(), R.mipmap.xietingfeng);
+        mBitmap2 = BitmapFactory.decodeResource(getResources(), R.mipmap.xietingfeng2);
 
         iv_01.setImageBitmap(mBitmap1);
         iv_02.setImageBitmap(mBitmap2);
@@ -131,21 +180,119 @@ public class FaceContrast extends AppCompatActivity {
         bt_face_check.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                double check_info = 0;
-                Mat mat1 = new Mat();
-                Mat mat2 = new Mat();
-                Mat mat11 = new Mat();
-                Mat mat22 = new Mat();
-                Utils.bitmapToMat(mBitmap1, mat1);
-                Utils.bitmapToMat(mBitmap2, mat2);
-                Imgproc.cvtColor(mat1, mat11, Imgproc.COLOR_BGR2GRAY);
-                Imgproc.cvtColor(mat2, mat22, Imgproc.COLOR_BGR2GRAY);
-
-                comPareHist(mat11, mat22);
+//                double check_info = 0;
+//                Mat mat1 = new Mat();
+//                Mat mat2 = new Mat();
+//                Mat mat11 = new Mat();
+//                Mat mat22 = new Mat();
+//                Utils.bitmapToMat(mBitmap1, mat1);
+//                Utils.bitmapToMat(mBitmap2, mat2);
+//                Imgproc.cvtColor(mat1, mat11, Imgproc.COLOR_BGR2GRAY);
+//                Imgproc.cvtColor(mat2, mat22, Imgproc.COLOR_BGR2GRAY);
+//                comPareHist(mat11, mat22);//这是计算两张图片的相似都
 //                bt_face_check.setText("检测结果：" + check_info);
+
+
+                //如果人脸模型初始化成功了再操作
+                if (isFastDoubleClick()) {
+                    Toast.makeText(FaceContrast.this, "请勿频繁点击，稍后再试", Toast.LENGTH_SHORT).show();
+                    return;
+                } else {
+                    if (moduleFlag) {
+                        Toast.makeText(FaceContrast.this, "匹配中请稍等", Toast.LENGTH_SHORT).show();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                //加载进行匹配的图像
+//                            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.tang08);
+                                //这里必须进行copy否则修改不了
+                                Bitmap copy = mBitmap2.copy(Bitmap.Config.ARGB_8888, true);
+                                //利用Bitmap创建Canvas，为了在图像上绘制人脸区域
+                                Canvas canvas = new Canvas(copy);
+                                Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                                paint.setColor(Color.RED);
+                                paint.setStyle(Paint.Style.STROKE);
+                                paint.setStrokeWidth(3);
+                                SeetaImageData seetaImageData = ConvertUtil.ConvertToSeetaImageData(mBitmap2);
+                                //人脸检测
+                                SeetaRect[] detects = FaceEngine.FACEDETECTOR.Detect(seetaImageData);
+                                if (detects.length > 0) {
+                                    //将所有检测到的人脸与注册到数据库的人脸进行匹配
+                                    for (int i = 0; i < detects.length; i++) {
+                                        SeetaRect faceRect = detects[i];
+                                        SeetaPointF[] seetaPoints = FaceEngine.POINTDETECTOR.Detect(seetaImageData, faceRect);//根据检测到的人脸进行特征点检测
+                                        float[] similarity = new float[1];//用来存储人脸相似度值
+                                        int targetIndex = FaceEngine.FACERECOGNIZER.Recognize(seetaImageData, seetaPoints, similarity);//匹配
+                                        Log.e("人脸匹配", targetIndex + "=======" + registerIndex + "=====" + similarity[0]);
+                                        //如果匹配值大于0.7说明是同一个人
+                                        if (similarity[0] > 0.7) {
+                                            //将匹配出来的人脸区域绘制出来
+                                            android.graphics.Rect rect = new Rect(faceRect.x, faceRect.y, faceRect.x + faceRect.width, faceRect.y + faceRect.height);
+                                            canvas.drawRect(rect, paint);
+                                        }
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                bt_face_check.setText("相似度：" + similarity[0]);
+                                            }
+                                        });
+                                    }
+                                    //通知主线程更新UI
+                                    Message obtain = Message.obtain();
+                                    obtain.obj = copy;
+                                    handler.sendMessage(obtain);
+                                }
+                            }
+                        }).start();
+                    } else {
+                        Toast.makeText(FaceContrast.this, "人脸模型尚未初始化成功请稍等", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
 
             }
         });
+    }
+
+    /**
+     * 初始化人脸检测器
+     */
+    private void initFace() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //利用SeetaFace2提供的转换方法获取SeetaRect（人脸识别结果）
+                SeetaImageData RegistSeetaImageData = ConvertUtil.ConvertToSeetaImageData(mBitmap1);
+                if (RegistSeetaImageData == null) {
+                    return;
+                }
+                SeetaRect[] faceRects = FaceEngine.FACEDETECTOR.Detect(RegistSeetaImageData);
+                if (faceRects.length > 0) {
+                    //获取人脸区域（这里只有一个所以取0）
+                    SeetaRect faceRect = faceRects[0];
+                    SeetaPointF[] seetaPoints = FaceEngine.POINTDETECTOR.Detect(RegistSeetaImageData, faceRect);//根据检测到的人脸进行特征点检测
+                    registerIndex = FaceEngine.FACERECOGNIZER.Register(RegistSeetaImageData, seetaPoints);//将人脸注册到SeetaFace2数据库
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(FaceContrast.this, "人脸模型初始化成功", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                //模型加载标记
+                moduleFlag = true;
+            }
+        }).start();
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (FaceEngine.FACERECOGNIZER != null) {
+            FaceEngine.FACERECOGNIZER.Clear();//清空注册的人脸
+//            FaceEngine.FACERECOGNIZER.dispose();
+        }
     }
 
     /**
@@ -215,7 +362,6 @@ public class FaceContrast extends AppCompatActivity {
         // 内存卡路径 需要SD卡读取权限
         return Environment.getExternalStorageDirectory() + "/FaceDetect/" + fileName + ".jpg";
     }
-
 
 
     public boolean fileIsExists(String fileName) {

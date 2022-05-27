@@ -3,6 +3,7 @@ package com.example.myapplication;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 
 import com.tencent.smtt.sdk.QbSdk;
@@ -13,6 +14,8 @@ import com.tencent.smtt.sdk.WebViewClient;
 public class NewWebView extends AppCompatActivity {
 
     private WebView webView;
+    private String url = "http://114.67.227.59/";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,7 +56,6 @@ public class NewWebView extends AppCompatActivity {
         webView.getSettings().setUseWideViewPort(true);
         webView.getSettings().setDomStorageEnabled(true);
 
-        String url = "http://114.67.227.59/";
         webView.loadUrl(url);
 
         webView.setWebViewClient(new WebViewClient() {
@@ -93,6 +95,16 @@ public class NewWebView extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+//        webView.loadUrl(url);
+        webView.onResume();
+    }
 
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
+            webView.goBack();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

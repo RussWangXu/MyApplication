@@ -22,7 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 
-public class MainActivity2 extends Activity {
+public class MainActivity3 extends Activity {
 
     private static final String TAG = "FaceTrack";
     private static final int IMG_QUALITY = 100;
@@ -36,7 +36,7 @@ public class MainActivity2 extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2);
+        setContentView(R.layout.activity_main3);
 
         initView();
         initOpenCV();

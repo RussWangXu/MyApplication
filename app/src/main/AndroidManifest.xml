@@ -7,19 +7,20 @@
         android:icon="@mipmap/app_icon"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/app_icon"
+        android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Design.NoActionBar"
         android:usesCleartextTraffic="true">
         <activity
             android:name=".NewWebView"
-            android:screenOrientation="landscape"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="landscape" />
         <activity
             android:name=".WebViewActivity"
             android:exported="false"
             android:screenOrientation="landscape" />
         <activity
-            android:name=".FaceContrast"
+            android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -29,12 +30,21 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".RegisterFaceInfoActivity"
+            android:exported="false"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".MainActivity2"
+            android:name=".FaceInfoLoginActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".FaceContrast"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".MainActivity3"
             android:screenOrientation="portrait" />
     </application>
+
     <uses-feature
         android:name="android.hardware.camera.autofocus"
         android:required="false" />
@@ -48,6 +58,7 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
+
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />

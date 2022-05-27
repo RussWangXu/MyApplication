@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:orientation="vertical">
 
     <TextView
         android:id="@+id/sample_text"
@@ -16,4 +17,39 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <Button
+        android:id="@+id/openWebView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="打开WebView"
+        android:textSize="20sp"/>
+
+    <Button
+        android:id="@+id/btOpenFaceCheck"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="打开人脸检测"
+        android:textSize="20sp"/>
+
+    <Button
+        android:id="@+id/btOpenFaceDetector"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="打开人脸识别对比"/>
+
+    <Button
+        android:id="@+id/btRegisterFace"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="人脸信息注册"/>
+
+    <Button
+        android:id="@+id/btInfoLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="人脸信息识别认证"/>
+
+</LinearLayout>
